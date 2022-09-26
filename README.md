@@ -1,5 +1,6 @@
 # distributed_circuit_partition
 Our code is still being improved！
+
 This is the result of our division of partial quantum circuits. By changing the line order of quantum circuits, the transmission cost of distributed circuits is changed. The following division results can calculate a relatively optimal transmission cost.
 # 4gt5-76
 ![2022-09-26 13 18 16](https://user-images.githubusercontent.com/114378123/192199058-9d99f9a4-c783-4bd1-bc4b-9440e1e4704f.png)
