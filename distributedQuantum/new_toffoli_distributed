@@ -1,0 +1,455 @@
+# toffoli门的隐形传态
+# 2022.1.10
+# cxy
+
+import copy
+import pandas as pd
+import re
+import math
+import itertools
+
+''' 流程
+1.读取文件，将电路转换为gate_list [['0', '1', '9'], ['2', '9', '10'], ['1', '2', '9'], ['3', '10', '11'], ['3', '9', '10'], ['2', '3', '9'],
+2.门的矩阵形式：[[1, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 1], [0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 2, 0, 1], 
+3.矩阵合并，求解隐形传态次数
+
+法一：# 是根据gate_list来判断是否为全局门，并非用materix_list
+     # 交换线序后，直接改变gate_list，从而 materix_list也会改变
+'''
+
+def get_data(str):
+    pattern = re.compile("[\d]+")
+    result = re.findall(pattern, str)
+    return result
+
+'''
+读取整个qasm文件
+'''
+def converter_circ_from_qasm(input_file_name):
+ #   df_ori_qc = pd.DataFrame(columns=['k', 'c', 't'])  # 近邻化 以dataframe形式存储的近邻化量子电路
+    gate_list =[]
+    qbit = 0
+    qasm_file = open(input_file_name, 'r')
+    iter_f = iter(qasm_file)
+    reserve_line = 4
+    num_line = 0
+    for line in iter_f:  # 遍历文件，一行行遍历，读取文本
+        num_line += 1
+        if num_line <= reserve_line:
+            continue
+        else:
+            if line[0:4] == 'creg':
+                qbit = get_data(line)[0]
+            if line[0:2] == 'CX' or line[0:2] == 'cx':
+                '''获取CNOT'''
+                cnot = get_data(line)
+                cnot_control = cnot[0]
+                cnot_target = cnot[1]
+                listSingle=[cnot_control,cnot_target]
+                gate_list.append(listSingle)
+            if line[0:3] == 'CCX' or line[0:3] == 'ccx':
+                '''获取toffoli'''
+                toffoli = get_data(line)
+                toffoli_control1 = toffoli[0]
+                toffoli_control2 = toffoli[1]
+                toffoli_target = toffoli[2]
+                listSingle = [toffoli_control1, toffoli_control2,toffoli_target]
+                gate_list.append(listSingle)
+    return gate_list, qbit
+
+
+'''
+将门转换为矩阵形式
+'''
+def gate_to_matrix(gate_list,qbit):
+    matrix_list = []  # 矩阵list [[1,0,0,2,1] ,[1,2,0,0,0]]
+    global_gate_sum = 0
+    for s in range(len(gate_list)):
+        qbit_sum_up = 0
+        qbit_sum_down = 0
+        matrix_son_list = [0] * (int(qbit)+1)
+      #  matrix_son_list = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        if len(gate_list[s]) == 2:  # cnot
+            matrix_son_list[int(gate_list[s][0])] = 1
+            matrix_son_list[int(gate_list[s][1])] = 2
+        if len(gate_list[s]) == 3:   # toffoli
+            matrix_son_list[int(gate_list[s][0])] = 1
+            matrix_son_list[int(gate_list[s][1])] = 1
+            matrix_son_list[int(gate_list[s][2])] = 2
+        # matrix_list末尾元素为状态码，0：局部门，1：全局门
+        for i in range(len(matrix_son_list)): # i：0-12
+            if i < int((len(matrix_son_list)-1)/2):
+                qbit_sum_up += matrix_son_list[i]
+            else:
+                qbit_sum_down += matrix_son_list[i]
+        # 如果上半分区或下半分区的matrix_list全为0，既为局部门
+        if qbit_sum_up == 0 or qbit_sum_down == 0:
+            matrix_son_list[-1] = 0
+        # 如果上半分区和下半分区的matrix_list都存在元素，既为全局门
+        if qbit_sum_up != 0 and qbit_sum_down != 0:
+            matrix_son_list[-1] = 1
+        matrix_list.append(matrix_son_list)
+        global_gate_sum += matrix_list[s][-1]
+    print('全局门个数：'+str(global_gate_sum))
+    return matrix_list
+
+
+'''toffoli门分解'''
+def toffoli_decompose(gate_list):
+    decompose_gate_list = []
+    for i in range(len(gate_list)):
+        if len(gate_list[i]) < 3: # 单量子门或者cnot门
+            decompose_gate_list.append(gate_list[i])
+        if len(gate_list[i]) == 3: # toffoli门
+            decompose_gate_list.append([gate_list[i][0], gate_list[i][2]])
+            decompose_gate_list.append([gate_list[i][0], gate_list[i][1]])
+            decompose_gate_list.append([gate_list[i][1], gate_list[i][2]])
+            decompose_gate_list.append([gate_list[i][0], gate_list[i][1]])
+            decompose_gate_list.append([gate_list[i][1], gate_list[i][2]])
+    return decompose_gate_list
+
+
+'''
+输出所有种线序组合
+'''
+def line_sequence_change_combination(qbit):
+    str1 = ''
+    # 最多支持 26量子位
+    str2 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
+            'V', 'W', 'X', 'Y', 'Z']
+    for i in range(int(qbit)):
+        # str1：ABCDEFGHIJKL.... 共qbit个
+        str1 = str1 + str2[i]
+    # 排列组合 将str1按qibt/2 一分为，共有C(qbit/2,qbit)种情况
+    line_sequence_combination = []  # 线序排列集合['ABCDEF', 'ABCDEG', 'ABCDEH', 'ABCDEI', 'ABCDEJ', 'ABCDEK', 'ABCDEL', 'ABCDFG', 'ABCDFH', 'ABCDFI', 'ABCDFJ'......]
+    for i in itertools.combinations(str1, int(int(qbit) / 2)):
+        #  print(''.join(i), end=" ")
+        line_sequence_combination.append(''.join(i))
+    return line_sequence_combination
+
+
+'''
+把字母变成对于的数字
+'''
+def letter_to_number(letter):
+    number = ord(letter) - 65
+    return number
+
+
+'''
+将new_gate_list全部转换为int
+'''
+def list_str_to_int(gate_list):
+    new_gate_list = []
+    for i in range(len(gate_list)):
+        son_new_gate_list = list(map(int,gate_list[i]))
+        new_gate_list.append(son_new_gate_list)
+    return new_gate_list
+
+
+'''
+根据前半部分线序推出全部线序  ABCDFG =>ABCDFGEHIJKL
+'''
+def single_to_all_line_sequence(line_sequence_combination,qbit):
+    str2 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
+            'V', 'W', 'X', 'Y', 'Z']
+    all_line_sequence = list(line_sequence_combination)
+
+    for i in range(int(qbit)):
+        if str2[i] not in all_line_sequence:
+            all_line_sequence.append(str2[i])
+    new_all_line_sequence = "".join(all_line_sequence)
+
+    return new_all_line_sequence
+
+
+'''
+多门合并传输
+只限相邻的全局门 
+'''
+def merge_transmission_with_recursion(matrix_list):
+    i = 0
+    matrix_size = len(matrix_list[0])-1
+    while i < len(matrix_list)-1:
+        # 此处要考虑：是否相邻两个门都是全局门才可以合并矩阵，还是不管是否都是全局门，也可以合并
+        # 两门都是全局门，才可以合并传输
+        if matrix_list[i][-1] == 1 and matrix_list[i + 1][-1] == 1:
+            for j in range(4):
+                # 两门具有相同控制位  [1,0,0,2][1,0,2,0] =>[1,0,2,2]
+                if matrix_list[i][j] == 1 and matrix_list[i+1][j] ==1:
+                    matrix_list[i][j] -= 1  # 在合并矩阵时，相同的控制位不变
+                    for k in range(matrix_size):  # 在合并矩阵时，除控制位以外的其他量子位，相加
+                        matrix_list[i][k] += matrix_list[i+1][k]  # 至此，相同控制位情况下，矩阵合并相加完成！
+                    del matrix_list[i+1]    # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+                # 一门合并完成时，无法和下一个门合并，跳出当前循环
+                if matrix_list[i][j] == 3 and matrix_list[i+1][j] == 0:
+                    break
+                # 一门控制位是另外一门的目标位 [1,0,0,2][2,0,1,0] =>[3,0,1,2]
+                if (matrix_list[i][j] == 1 and matrix_list[i+1][j] ==2) or (matrix_list[i][j] == 2 and matrix_list[i+1][j] ==1):
+                    for kk in range(matrix_size):  # 在合并矩阵时，所以量子位，相加
+                        matrix_list[i][kk] += matrix_list[i+1][kk]  # 至此，一门控制位是另外一门的目标位情况下，矩阵合并相加完成！
+                    del matrix_list[i + 1]  # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+                # 考虑多重合并
+                if matrix_list[i][j] >= 3 and matrix_list[i][j]==1:
+                    for kkk in range(matrix_size):  # 在合并矩阵时，所以量子位，相加
+                        matrix_list[i][kkk] += matrix_list[i+1][kkk]
+                    del matrix_list[i + 1]  # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+        i += 1
+    transmissions_number_by_matrix = 0 # 隐形传态次数
+    for t in range(len(matrix_list)):
+        transmissions_number_by_matrix += matrix_list[t][-1]
+    return matrix_list,transmissions_number_by_matrix
+
+
+'''
+多门合成传输
+所有门都可以加入到传输中
+正序
+'''
+def more_merge_transmission_with_recursion(matrix_list):
+    i = 0
+    matrix_size = len(matrix_list[0]) - 1
+    while i < len(matrix_list) - 1:
+        # 此处要考虑：是否相邻两个门都是全局门才可以合并矩阵，还是不管是否都是全局门，也可以合并
+        # 两门都是全局门，才可以合并传输
+        if len(matrix_list[i]) != 0:
+        #if matrix_list[i][-1] == 1 and matrix_list[i + 1][-1] == 1:
+            for j in range(4):
+                # 两门具有相同控制位  [1,0,0,2][1,0,2,0] =>[1,0,2,2]
+                if matrix_list[i][j] == 1 and matrix_list[i + 1][j] == 1:
+                    matrix_list[i][j] -= 1  # 在合并矩阵时，相同的控制位不变
+                    for k in range(matrix_size):  # 在合并矩阵时，除控制位以外的其他量子位，相加
+                        matrix_list[i][k] += matrix_list[i + 1][k]  # 至此，相同控制位情况下，矩阵合并相加完成！
+                    del matrix_list[i + 1]  # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+                # 一门合并完成时，无法和下一个门合并，跳出当前循环
+                if matrix_list[i][j] == 3 and matrix_list[i + 1][j] == 0:
+                    break
+                # 一门控制位是另外一门的目标位 [1,0,0,2][2,0,1,0] =>[3,0,1,2]
+                if (matrix_list[i][j] == 1 and matrix_list[i + 1][j] == 2) or (
+                        matrix_list[i][j] == 2 and matrix_list[i + 1][j] == 1):
+                    for kk in range(matrix_size):  # 在合并矩阵时，所以量子位，相加
+                        matrix_list[i][kk] += matrix_list[i + 1][kk]  # 至此，一门控制位是另外一门的目标位情况下，矩阵合并相加完成！
+                    del matrix_list[i + 1]  # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+                # 考虑多重合并
+                if matrix_list[i][j] >= 3 and matrix_list[i][j] == 1:
+                    for kkk in range(matrix_size):  # 在合并矩阵时，所以量子位，相加
+                        matrix_list[i][kkk] += matrix_list[i + 1][kkk]
+                    del matrix_list[i + 1]  # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+        i += 1
+    transmissions_number_by_matrix = 0  # 隐形传态次数
+    for t in range(len(matrix_list)):
+        transmissions_number_by_matrix += matrix_list[t][-1]
+    return matrix_list, transmissions_number_by_matrix
+
+
+'''多门合成传输,所有门都可以加入到传输中,倒序'''
+''' 倒序判断能否合并传输'''
+'''无法解决合并传输时，间隔门的合并传输
+思路1:矩阵中的状态码新增-1，0，1；代表上半分区和下半分区，以及全局门
+思路2：或者考虑直接在遍历中判断在哪个分区
+思路3：在矩阵list中直接删除在非此分区的门'''
+def merge_transmission_with_recursion_by_reverse_order(matrix_list):
+    # for i in range(len(matrix_list)-1):
+    i = 0
+    # 换一种思路，从下往上判断是否为上班分区局部门
+    ii = 0
+   # for ii in range(len(matrix_list)):
+    while ii < len(matrix_list):
+        is_local_gate = 0
+        for iii in range(len(matrix_list[0])-2,int((len(matrix_list[0]) - 1)/2)-1,-1):
+            is_local_gate = is_local_gate + matrix_list[ii][iii]
+            # if matrix_list[ii][iii] == 0:
+            #     is_local_gate = 1
+            # else:
+            #     is_local_gate = 0
+        if is_local_gate == 0:
+            del matrix_list[ii]
+            ii -= 1
+        ii +=1
+   # print(matrix_list)
+    matrix_size = len(matrix_list[0]) - 1
+    while i < len(matrix_list)-1:
+        # 两门都是全局门，才可以合并传输
+        if len(matrix_list[i]) != 0:
+       # if matrix_list[i][-1] == 1 and matrix_list[i + 1][-1] == 1:
+            for j in range(matrix_size-1,0,-1):
+                # 两门具有相同控制位  [1,0,0,2][1,0,2,0] =>[1,0,2,2]
+                if matrix_list[i][j] == 1 and matrix_list[i+1][j] ==1:
+                    matrix_list[i][j] -= 1  # 在合并矩阵时，相同的控制位不变
+                    for k in range(matrix_size-1,0,-1):  # 在合并矩阵时，除控制位以外的其他量子位，相加
+                        matrix_list[i][k] += matrix_list[i+1][k]  # 至此，相同控制位情况下，矩阵合并相加完成！
+                    del matrix_list[i+1]    # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+                # 一门合并完成时，无法和下一个门合并，跳出当前循环
+                if matrix_list[i][j] == 3 and matrix_list[i+1][j] == 0:
+                    break
+                # 一门控制位是另外一门的目标位 [1,0,0,2][2,0,1,0] =>[3,0,1,2]
+                if (matrix_list[i][j] == 1 and matrix_list[i+1][j] ==2) or (matrix_list[i][j] == 2 and matrix_list[i+1][j] ==1):
+                    for kk in range(matrix_size-1,0,-1):  # 在合并矩阵时，所以量子位，相加
+                        matrix_list[i][kk] += matrix_list[i+1][kk]  # 至此，一门控制位是另外一门的目标位情况下，矩阵合并相加完成！
+                    del matrix_list[i + 1]  # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+                # 考虑多重合并
+                # 注意状态码得改变，容易忽略0->1的情况
+                if (matrix_list[i][j] >= 3 and matrix_list[i+1][j]==1) :
+                    if (matrix_list[i+1][-1] == 1):
+                        matrix_list[i][-1] = 1
+                    for kkk in range(matrix_size-1,0,-1):  # 在合并矩阵时，所有量子位，相加
+                        matrix_list[i][kkk] += matrix_list[i+1][kkk]
+                    del matrix_list[i + 1]  # 合并完成后需要删除后一个矩阵
+                    i -= 1
+                    break
+        i += 1
+    transmissions_number_by_matrix = 0 # 隐形传态次数
+    for t in range(len(matrix_list)):
+        transmissions_number_by_matrix += matrix_list[t][-1]
+    return matrix_list,transmissions_number_by_matrix
+
+
+'''判断隐形传态方向，生成方向list'''
+def judge_tc_direction(matrix_list):
+    tc_direction_list = [-1] * len(matrix_list)  # 隐形传态方向
+    # print(len(matrix_list))
+    # print(tc_direction_list)
+    for i in range(len(matrix_list)):
+        matrix_list_element_sum_up = sum(matrix_list[i][0:int((len(matrix_list[i]) - 1) / 2)])  # 矩阵上半分区元素之和
+        matrix_list_element_sum_down = sum(
+            matrix_list[i][int((len(matrix_list[i]) - 1) / 2):int(len(matrix_list[i]) - 1)])  # 矩阵下半分区元素之和
+       # print(str(i)+' '+str(matrix_list_element_sum_up)+' '+str(matrix_list_element_sum_down))
+        if matrix_list[i][-1] == 1:
+            # 判断传输方向
+            if matrix_list_element_sum_up == matrix_list_element_sum_down:  # 都是2
+                # 查找目标位在哪个分区
+                for j in range(len(matrix_list[i]) - 1):
+                    # 目标位在上
+                    if matrix_list[i][j] == 2 and j < int((len(matrix_list[i]) - 1) / 2):
+                        tc_direction_list[i] = 1
+                    # 目标位在下
+                    if matrix_list[i][j] == 2 and j >= int((len(matrix_list[i]) - 1) / 2):
+                        tc_direction_list[i] = 0
+            if matrix_list_element_sum_up == 1 and matrix_list_element_sum_down == 3:
+                tc_direction_list[i] = 1
+            if matrix_list_element_sum_up == 3 and matrix_list_element_sum_down == 1:
+                tc_direction_list[i] = 0
+    return tc_direction_list
+
+
+'''相邻全局toffoli门的隐形传态'''
+def toffoli_distributed(matrix_list,tc_direction_list):
+    i = 0
+    tc_num = 0 # 隐形传态次数
+    for p in range(len(matrix_list)):
+        if matrix_list[p][-1] == 1:
+            tc_num += 1
+   # print(tc_num)
+    while i < len(matrix_list)-1:
+        # 如果相邻两门都是全局门
+        if matrix_list[i][-1] == 1 and matrix_list[i + 1][-1] == 1:
+            # 如果两门都是toffoli门
+            if sum(matrix_list[i]) == 5 and sum(matrix_list[i+1]) == 5:
+                # 两toffoli门传输方向一致，且都是向下传输
+                if tc_direction_list[i] == tc_direction_list[i+1] and tc_direction_list[i] == 1:
+                    # 有相同的位，此时两门可以进行合并传输
+                    for j1 in range(int((len(matrix_list[i]) - 1) / 2)):
+                        # 两门具有相同位，且此时的量子位在上方分区
+                        if matrix_list[i][j1] == matrix_list[i + 1][j1] or matrix_list[i][j1] + matrix_list[i + 1][j1] == 3:
+                            # 满足以上所有推荐这两个门可以合并传输
+                            tc_num -= 1  # 两门合并传输，计算隐形传态传输时，记载在后一个门
+                            print(i)
+                            print('向下合并传输一次')
+                    # 跳出当前循环
+                            break
+                # 两toffoli门传输方向一致，且都是向上传输
+                if tc_direction_list[i] == tc_direction_list[i + 1] and tc_direction_list[i] == 0:
+                    for j2 in range(int((len(matrix_list[i]) - 1) / 2), len(matrix_list[i]) - 1):
+                        if matrix_list[i][j2] == matrix_list[i + 1][j2] or matrix_list[i][j2] + matrix_list[i + 1][j2] == 3:
+                            tc_num -= 1
+                            print('向上合并传输一次')
+                    # 跳出当前循环
+                            break
+        i += 1
+    return matrix_list,tc_num
+
+
+'''
+主函数
+'''
+if __name__ == '__main__':
+    pd.set_option('display.max_columns', 28)  # 给最大列设置为10列
+    pd.set_option('display.max_rows', 100)  # 设置最大可见100行
+    input_filename = 'E:/python/project/qasm/min-alu-305.qasm'
+    gate_list = converter_circ_from_qasm(input_filename)[0]
+    qbit = converter_circ_from_qasm(input_filename)[1]        # 量子位
+    print(qbit)
+    print(gate_list)      # 门
+    # matrix_list = gate_to_matrix(gate_list,qbit)
+    # print(matrix_list)   # 矩阵形式
+    gate_list = toffoli_decompose(gate_list)
+    # 是根据gate_list来判断是否为全局门，并非用matrix_list
+    # 直接改变gate_list，从而 matrix_list也会改变
+    #  new_gate_list = []  # 改变线序后的gate_list
+    line_sequence_combination = line_sequence_change_combination(qbit)
+    print(line_sequence_combination)  # 输出所有种线序组合
+    initial_line_sequence = single_to_all_line_sequence(line_sequence_combination[0],qbit)  #ABCDEF GHIJKL
+    print(initial_line_sequence)
+    min_tc1 = len(gate_list)  # 最小隐形传态次数(全局门合并)
+    min_tc2 = len(gate_list)  # 最小隐形传态次数(所有门合并)
+    min_line_sequence1 = ''
+    min_line_sequence2 = ''
+    # 根据线序改变gate_list
+    for i in range(len(line_sequence_combination)):  # i: 0-923
+        new_gate_list = list_str_to_int(gate_list)
+        all_line_sequence = single_to_all_line_sequence(line_sequence_combination[i],qbit)   # ABCDEG FHIJKL
+       # print(all_line_sequence)
+        for j in range(len(all_line_sequence)):  # j: 0-11
+            if all_line_sequence[j] == initial_line_sequence[j]:
+                continue
+            if all_line_sequence[j] != initial_line_sequence[j]:
+                for k in range(len(new_gate_list)):  # k: 门数
+                    for p in range(len(new_gate_list[k])):  # l:0-3
+                        if new_gate_list[k][p] == letter_to_number(all_line_sequence[j]):
+                            new_gate_list[k][p] = str(j)
+       # print(list_str_to_int(new_gate_list))
+
+        matrix_list = gate_to_matrix(new_gate_list, qbit)
+        matrix_list_by_more = copy.deepcopy(matrix_list)
+        matrix_list_by_reverse_order = copy.deepcopy(matrix_list)
+        toffoli_list = copy.deepcopy(matrix_list)
+       # print(matrix_list)
+        # 输出模块
+        print(all_line_sequence)
+        multi_transmission_list = merge_transmission_with_recursion(matrix_list)[0]
+        print('通过矩阵合并求出的隐形传态次数（默认位全部向下传输，只考虑全局门）:' + str(
+             merge_transmission_with_recursion(matrix_list)[1] ))
+        if merge_transmission_with_recursion(matrix_list)[1] < min_tc1:
+            min_tc1 = merge_transmission_with_recursion(matrix_list)[1]
+            min_line_sequence1 = all_line_sequence
+
+        multi_transmission_list_more = more_merge_transmission_with_recursion(matrix_list_by_more)[0]
+        print('通过矩阵合并求出的隐形传态次数（默认位全部向下传输,考虑局部门）:' + str(more_merge_transmission_with_recursion(matrix_list_by_more)[1] ))
+        if more_merge_transmission_with_recursion(matrix_list_by_more)[1] < min_tc2:
+            min_tc2 = more_merge_transmission_with_recursion(matrix_list_by_more)[1]
+            min_line_sequence2 = all_line_sequence
+        print(' ')
+
+
+print('################################################')
+print('全局门合并最小隐形传态次数(分解） '+str(min_line_sequence1)+' '+str(min_tc1))
+print('任意门合并最小隐形传态次数（分解） '+str(min_line_sequence2)+' '+str(min_tc2))
+print('################################################')
+
+
