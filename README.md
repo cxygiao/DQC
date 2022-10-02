@@ -20,7 +20,13 @@ initial line sequence：ABCDEFGHIJKL
 optimized line sequence：ABDFHICEGJKL
 ![Sym9-147](https://user-images.githubusercontent.com/114378123/193457591-06358d0f-be93-4119-bb43-568eba242072.png)
 ## sym6-316
+initial line sequence：ABCDEFGHIJKLMN 
+
+optimized line sequence：ACEFGHIBDJKLMN
 ![Sym6-316](https://user-images.githubusercontent.com/114378123/192197055-88fd471b-4bcc-4f4a-865f-471b7ebfcdc1.png)
 ## ham7-299
+initial line sequence：ABCDEFGHIJKLMNOPQRSTU 
+
+optimized line sequence：ACDJLNOPSUBEFHIKMQRT
 ![Ham7-299](https://user-images.githubusercontent.com/114378123/192196245-9642e076-0ff2-41aa-9759-f5fe6ec8fbd4.png)
 
