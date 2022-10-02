@@ -14,6 +14,11 @@ optimized line sequence：ABCFGDEHIJ
 ![Min-alu-305](https://user-images.githubusercontent.com/114378123/192197008-afeebafc-d64d-404e-8b6d-6a79d44dadfc.png)
 ## parity-247
 ![parity_247](https://user-images.githubusercontent.com/114378123/192197032-ef42003b-35ee-409f-a221-765bc32f9780.png)
+# sym9-147
+initial line sequence：ABCDEFGHIJKL 
+
+optimized line sequence：ABDFHICEGJKL
+![Sym9-147](https://user-images.githubusercontent.com/114378123/193457591-06358d0f-be93-4119-bb43-568eba242072.png)
 ## sym6-316
 ![Sym6-316](https://user-images.githubusercontent.com/114378123/192197055-88fd471b-4bcc-4f4a-865f-471b7ebfcdc1.png)
 ## ham7-299
