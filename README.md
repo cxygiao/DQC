@@ -37,6 +37,10 @@ initial line sequence：ABCDEFGHIJKL
 
 optimized line sequence：ABCDEFGHIJKL 
 ![parity_247](https://user-images.githubusercontent.com/114378123/192197032-ef42003b-35ee-409f-a221-765bc32f9780.png)
+### merged transfer
+<img width="639" alt="image" src="https://user-images.githubusercontent.com/114378123/193572944-81b5573d-a5a5-4cc6-b802-21c246283dce.png">
+<img width="639" alt="image" src="https://user-images.githubusercontent.com/114378123/193573061-1581a6c6-2a5d-4f87-9ab2-8806125efaa0.png">
+
 # sym9-147
 initial line sequence：ABCDEFGHIJKL 
 
