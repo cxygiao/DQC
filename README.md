@@ -8,14 +8,19 @@ initial line sequence：ABCDE
 optimized line sequence：ABCDE
 ![2022-09-26 13 18 16](https://user-images.githubusercontent.com/114378123/192199058-9d99f9a4-c783-4bd1-bc4b-9440e1e4704f.png)
 ### merged transfer
-<img width="762" alt="image" src="https://user-images.githubusercontent.com/114378123/193527159-f0aa17e2-b016-4c11-ba1d-c2286cce475a.png">
-<img width="762" alt="image" src="https://user-images.githubusercontent.com/114378123/193527296-bd5a529c-876f-40db-8be8-90479568e47d.png">
+<img width="762" alt="image" src="https://user-images.githubusercontent.com/114378123/193528165-987603d0-1cdf-4e9b-bf35-783f8954ac8e.png">
+<img width="762" alt="image" src="https://user-images.githubusercontent.com/114378123/193528097-805ce4a5-83f9-4e41-ae4a-d4515c1ac8a3.png">
+
 
 ## 4gt11-82
 initial line sequence：ABCDE
 
 optimized line sequence：ABCDE
 ![4gt11-82](https://user-images.githubusercontent.com/114378123/192195731-89b9dafa-7afd-470b-9a34-a411237010ce.png)
+### merged transfer
+<img width="752" alt="image" src="https://user-images.githubusercontent.com/114378123/193528384-544ddb6e-997b-4cd9-8cfc-c47e735f362e.png">
+
+
 ## mini-alu-305
 initial line sequence：ABCDEFGHIJ 
 
