@@ -19,6 +19,7 @@ optimized line sequence：ABCDE
 ![4gt11-82](https://user-images.githubusercontent.com/114378123/192195731-89b9dafa-7afd-470b-9a34-a411237010ce.png)
 ### merged transfer
 <img width="752" alt="image" src="https://user-images.githubusercontent.com/114378123/193528384-544ddb6e-997b-4cd9-8cfc-c47e735f362e.png">
+<img width="752" alt="image" src="https://user-images.githubusercontent.com/114378123/193528485-cdbe3466-043e-4104-b85e-65987195c826.png">
 
 
 ## mini-alu-305
@@ -26,6 +27,8 @@ initial line sequence：ABCDEFGHIJ
 
 optimized line sequence：ABCFGDEHIJ
 ![Min-alu-305](https://user-images.githubusercontent.com/114378123/192197008-afeebafc-d64d-404e-8b6d-6a79d44dadfc.png)
+### merged transfer
+
 ## parity-247
 initial line sequence：ABCDEFGHIJKL 
 
