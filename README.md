@@ -55,9 +55,13 @@ initial line sequence：ABCDEFGHIJKLMN
 
 optimized line sequence：ACEFGHIBDJKLMN
 ![Sym6-316](https://user-images.githubusercontent.com/114378123/192197055-88fd471b-4bcc-4f4a-865f-471b7ebfcdc1.png)
+### merged transfer
+<img width="822" alt="image" src="https://user-images.githubusercontent.com/114378123/193574912-1c5cb4d3-5bfa-4e3c-96ce-aefe313b2030.png">
+
 ## ham7-299
 initial line sequence：ABCDEFGHIJKLMNOPQRSTU 
 
 optimized line sequence：ACDJLNOPSUBEFHIKMQRT
 ![Ham7-299](https://user-images.githubusercontent.com/114378123/192196245-9642e076-0ff2-41aa-9759-f5fe6ec8fbd4.png)
-
+### merged transfer
+<img width="830" alt="image" src="https://user-images.githubusercontent.com/114378123/193574964-51057836-c58d-4995-876c-b61fed96e967.png">
