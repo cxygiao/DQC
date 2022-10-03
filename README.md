@@ -28,6 +28,8 @@ initial line sequence：ABCDEFGHIJ
 optimized line sequence：ABCFGDEHIJ
 ![Min-alu-305](https://user-images.githubusercontent.com/114378123/192197008-afeebafc-d64d-404e-8b6d-6a79d44dadfc.png)
 ### merged transfer
+<img width="755" alt="image" src="https://user-images.githubusercontent.com/114378123/193572653-827e287b-5a25-4782-973a-728a772b2428.png">
+
 
 ## parity-247
 initial line sequence：ABCDEFGHIJKL 
