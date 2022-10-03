@@ -7,6 +7,8 @@ initial line sequence：ABCDE
 
 optimized line sequence：ABCDE
 ![2022-09-26 13 18 16](https://user-images.githubusercontent.com/114378123/192199058-9d99f9a4-c783-4bd1-bc4b-9440e1e4704f.png)
+<img width="762" alt="image" src="https://user-images.githubusercontent.com/114378123/193527159-f0aa17e2-b016-4c11-ba1d-c2286cce475a.png">
+
 ## 4gt11-82
 initial line sequence：ABCDE
 
