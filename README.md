@@ -29,6 +29,7 @@ optimized line sequence：ABCFGDEHIJ
 ![Min-alu-305](https://user-images.githubusercontent.com/114378123/192197008-afeebafc-d64d-404e-8b6d-6a79d44dadfc.png)
 ### merged transfer
 <img width="755" alt="image" src="https://user-images.githubusercontent.com/114378123/193572653-827e287b-5a25-4782-973a-728a772b2428.png">
+<img width="755" alt="image" src="https://user-images.githubusercontent.com/114378123/193572821-374d82a9-3509-4f11-9ab5-d9bb3914c15a.png">
 
 
 ## parity-247
